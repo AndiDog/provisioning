@@ -21,7 +21,7 @@ variable "image" {
 }
 
 variable "ssh_keys" {
-  type = list
+  type = list(string)
 }
 
 provider "hcloud" {
@@ -29,7 +29,7 @@ provider "hcloud" {
 }
 
 variable "apt_packages" {
-  type    = list
+  type    = list(string)
   default = []
 }
 

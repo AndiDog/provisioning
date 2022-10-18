@@ -38,6 +38,16 @@ variable "hcloud_image" {
   default = "ubuntu-20.04"
 }
 
+variable "hcloud_ipv4_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "hcloud_ipv6_enabled" {
+  type    = bool
+  default = true
+}
+
 /* scaleway */
 variable "scaleway_organization_id" {
   default = ""

@@ -33,12 +33,26 @@ variable "apt_packages" {
   default = []
 }
 
+variable "ipv4_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "ipv6_enabled" {
+  type    = bool
+  default = true
+}
+
 resource "hcloud_server" "host" {
   name        = format(var.hostname_format, count.index + 1)
   location    = var.location
   image       = var.image
   server_type = var.type
   ssh_keys    = var.ssh_keys
+  public_net {
+    ipv4_enabled = var.ipv4_enabled
+    ipv6_enabled = var.ipv6_enabled
+  }
 
   count = var.hosts
 
@@ -46,7 +60,7 @@ resource "hcloud_server" "host" {
     user    = "root"
     type    = "ssh"
     timeout = "2m"
-    host    = self.ipv4_address
+    host    = coalesce(self.ipv6_address, self.ipv4_address)
   }
 
   provisioner "remote-exec" {
@@ -68,15 +82,15 @@ resource "hcloud_server" "host" {
 # }
 
 output "hostnames" {
-  value = "${hcloud_server.host.*.name}"
+  value = hcloud_server.host.*.name
 }
 
 output "public_ips" {
-  value = "${hcloud_server.host.*.ipv4_address}"
+  value = var.ipv4_enabled ? hcloud_server.host.*.ipv4_address : hcloud_server.host.*.ipv6_address
 }
 
 output "private_ips" {
-  value = "${hcloud_server.host.*.ipv4_address}"
+  value = var.ipv4_enabled ? hcloud_server.host.*.ipv4_address : hcloud_server.host.*.ipv6_address
 }
 
 output "private_network_interface" {

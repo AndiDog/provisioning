@@ -8,6 +8,8 @@ module "provider" {
   image           = var.hcloud_image
   hosts           = var.node_count
   hostname_format = var.hostname_format
+  ipv4_enabled    = var.hcloud_ipv4_enabled
+  ipv6_enabled    = var.hcloud_ipv6_enabled
 }
 
 # module "provider" {
@@ -68,7 +70,7 @@ module "provider" {
 
 # module "provider" {
 #   source = "./provider/upcloud"
-# 
+#
 #   username        = var.upcloud_username
 #   password        = var.upcloud_password
 #   hosts           = var.node_count

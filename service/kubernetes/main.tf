@@ -1,5 +1,5 @@
 variable "apiserver_extra_args" {
-  type = map
+  type = map(any)
 
   default = {}
 }
@@ -17,11 +17,11 @@ variable "apiserver_extra_volumes" {
 variable "node_count" {}
 
 variable "connections" {
-  type = list
+  type = list(any)
 }
 
 variable "vpn_ips" {
-  type = list
+  type = list(any)
 }
 
 variable "vpn_interface" {
@@ -29,7 +29,7 @@ variable "vpn_interface" {
 }
 
 variable "etcd_endpoints" {
-  type = list
+  type = list(any)
 }
 
 variable "overlay_interface" {
@@ -61,6 +61,11 @@ locals {
   cluster_token = "${random_string.token1.result}.${random_string.token2.result}"
 }
 
+# GitHub does not offer release downloads via IPv6 yet (https://github.com/community/community/discussions/10539)
+data "http" "weave_net_manifest" {
+  url = "https://github.com/weaveworks/weave/releases/download/${var.weave_net_version}/weave-daemonset-k8s.yaml"
+}
+
 resource "null_resource" "kubernetes" {
   count = var.node_count
 
@@ -68,6 +73,13 @@ resource "null_resource" "kubernetes" {
     host  = element(var.connections, count.index)
     user  = "root"
     agent = true
+  }
+
+  lifecycle {
+    precondition {
+      condition     = startswith(data.http.weave_net_manifest.response_body, "apiVersion:")
+      error_message = "Weave Net manifest download failed"
+    }
   }
 
   provisioner "remote-exec" {
@@ -89,6 +101,12 @@ resource "null_resource" "kubernetes" {
   provisioner "file" {
     content     = data.template_file.master-configuration.rendered
     destination = "/tmp/master-configuration.yml"
+  }
+
+  # Only needed for master
+  provisioner "file" {
+    content     = data.http.weave_net_manifest.response_body
+    destination = "/tmp/weave-daemonset-k8s.yaml"
   }
 
   provisioner "remote-exec" {
@@ -121,7 +139,6 @@ data "template_file" "master" {
 
   vars = {
     token = local.cluster_token
-    weave_net_version = var.weave_net_version
   }
 }
 

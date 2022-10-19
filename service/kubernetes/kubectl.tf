@@ -32,14 +32,17 @@ resource "null_resource" "kubectl" {
   }
 
   provisioner "local-exec" {
+    # scp requires brackets for IPv6 addresses. Assume IPv4/hostname if address contains a dot,
+    # IPv6 otherwise.
     command = <<EOT
       scp -oStrictHostKeyChecking=no \
-        root@${element(var.connections, 0)}:/etc/kubernetes/pki/{apiserver-kubelet-client.key,apiserver-kubelet-client.crt,ca.crt} \
+        root@"${can(regex("\\.", element(var.connections, 0))) ? "" : "["}${element(var.connections, 0)}${can(regex("\\.", element(var.connections, 0))) ? "" : "]"}":/etc/kubernetes/pki/{apiserver-kubelet-client.key,apiserver-kubelet-client.crt,ca.crt} \
         $HOME/.kube/${var.cluster_name}
 EOT
   }
 
   provisioner "local-exec" {
+    # Same for IPv6 addresses in HTTP URLs
     command = <<EOT
       if [ -n "${var.kubeconfig_file}" ]; then
         export KUBECONFIG="${var.kubeconfig_file}"
@@ -47,7 +50,7 @@ EOT
 
       kubectl config set-cluster ${var.cluster_name} \
       --certificate-authority=$HOME/.kube/${var.cluster_name}/ca.crt \
-      --server=https://${element(var.connections, 0)}:${var.api_secure_port} \
+      --server=https://${can(regex("\\.", element(var.connections, 0))) ? "" : "["}${element(var.connections, 0)}${can(regex("\\.", element(var.connections, 0))) ? "" : "]"}:${var.api_secure_port} \
       --embed-certs=true
 
       kubectl config set-credentials ${var.cluster_name}-admin \

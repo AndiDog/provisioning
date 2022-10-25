@@ -43,7 +43,9 @@ resource "null_resource" "wireguard" {
 
   provisioner "remote-exec" {
     inline = [
+      // TODO base the decision on IPv4 vs. IPv6
       "echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf",
+      "echo net.ipv6.conf.all.forwarding=1 >> /etc/sysctl.conf",
       "sysctl -p",
     ]
   }
@@ -109,7 +111,9 @@ data "template_file" "peer-conf" {
     endpoint    = element(var.private_ips, count.index)
     port        = var.vpn_port
     public_key  = element(data.external.keys.*.result.public_key, count.index)
-    allowed_ips = "${element(data.template_file.vpn_ips.*.rendered, count.index)}/32"
+    # TODO must also allow NAT64
+    # Assume IPv4 if address contains a dot, IPv6 otherwise
+    allowed_ips = "${element(data.template_file.vpn_ips.*.rendered, count.index)}/${can(regex("\\.", element(data.template_file.vpn_ips.*.rendered, count.index))) ? 32 : 128}"
   }
 }
 

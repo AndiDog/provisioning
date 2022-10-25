@@ -62,6 +62,8 @@ locals {
 }
 
 # GitHub does not offer release downloads via IPv6 yet (https://github.com/community/community/discussions/10539)
+#
+# TODO IPv6 can only work with another CNI. Weave Net does not support IPv6 (see https://github.com/weaveworks/weave/issues/19). Replace it, since it's unsupported software by now (https://www.weave.works/blog/weave-cloud-end-of-service).
 data "http" "weave_net_manifest" {
   url = "https://github.com/weaveworks/weave/releases/download/${var.weave_net_version}/weave-daemonset-k8s.yaml"
 }

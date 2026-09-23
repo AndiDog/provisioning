@@ -34,8 +34,13 @@ resource "null_resource" "kubectl" {
   provisioner "local-exec" {
     command = <<EOT
       scp -oStrictHostKeyChecking=no \
-        root@"${element(var.connections, 0)}":/etc/kubernetes/pki/{apiserver-kubelet-client.key,apiserver-kubelet-client.crt,ca.crt} \
+        root@"${element(var.connections, 0)}":/etc/kubernetes/{admin.conf,pki/ca.crt} \
         $HOME/.kube/${var.cluster_name}
+
+      kubectl config view --raw --kubeconfig=$HOME/.kube/${var.cluster_name}/admin.conf \
+        -o jsonpath='{.users[0].user.client-certificate-data}' | base64 -d > $HOME/.kube/${var.cluster_name}/admin.crt
+      kubectl config view --raw --kubeconfig=$HOME/.kube/${var.cluster_name}/admin.conf \
+        -o jsonpath='{.users[0].user.client-key-data}' | base64 -d > $HOME/.kube/${var.cluster_name}/admin.key
 EOT
   }
 
@@ -51,8 +56,8 @@ EOT
       --embed-certs=true
 
       kubectl config set-credentials ${var.cluster_name}-admin \
-        --client-key=$HOME/.kube/${var.cluster_name}/apiserver-kubelet-client.key \
-        --client-certificate=$HOME/.kube/${var.cluster_name}/apiserver-kubelet-client.crt \
+        --client-key=$HOME/.kube/${var.cluster_name}/admin.key \
+        --client-certificate=$HOME/.kube/${var.cluster_name}/admin.crt \
         --embed-certs=true
 
       kubectl config set-context ${var.cluster_name} \

@@ -30,11 +30,3 @@ rm cilium-linux-$${CLI_ARCH}.tar.gz*
 
 cilium install --version ${cilium_version} --set ipam.mode=cluster-pool --set ipam.operator.clusterPoolIPv4PodCIDRList=${overlay_cidr} %{ if length(overlay_cidr_ipv6) > 0 } --set ipv6.enabled=true --set ipam.operator.clusterPoolIPv6PodCIDRList='${overlay_cidr_ipv6}'%{ endif } %{ for arg in cilium_install_extra_args ~} ${arg} %{ endfor ~}
 cilium status --wait
-
-echo "Add cluster role binding"
-# See: https://kubernetes.io/docs/admin/authorization/rbac/
-kubectl create clusterrolebinding permissive-binding \
-  --clusterrole=cluster-admin \
-  --user=admin \
-  --user=kubelet \
-  --group=system:serviceaccounts
